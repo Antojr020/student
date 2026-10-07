@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Admin Dashboard</h2>
+    <button class="btn btn-success fw-bold shadow-sm" onclick="generateSamples()">
+        <i class="bi bi-cloud-download"></i> Generate Sample Students (API)
+    </button>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card bg-info text-white shadow-sm h-100 border-0 rounded-4">
+            <div class="card-body d-flex align-items-center justify-content-between p-4">
+                <div>
+                    <h5 class="text-white-50 mb-1">Total Students</h5>
+                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_students }}</h1>
+                </div>
+                <i class="bi bi-people-fill display-4 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow-sm h-100 border-0 rounded-4">
+            <div class="card-body d-flex align-items-center justify-content-between p-4">
+                <div>
+                    <h5 class="text-white-50 mb-1">Total Faculty</h5>
+                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_faculty }}</h1>
+                </div>
+                <i class="bi bi-person-workspace display-4 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark shadow-sm h-100 border-0 rounded-4">
+            <div class="card-body d-flex align-items-center justify-content-between p-4">
+                <div>
+                    <h5 class="text-dark-50 mb-1">Total Subjects</h5>
+                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_subjects }}</h1>
+                </div>
+                <i class="bi bi-book-half display-4 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Semester Performance Overview</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="adminChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function generateSamples() {
+        if(confirm("Fetch 5 random student profiles from RandomUser.me API and add them to the database?")) {
+            fetch('/api/generate_samples', {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                if(data.message) { 
+                    alert("Success: " + data.message); 
+                    window.location.reload(); 
+                }
+                else { alert("Error: " + data.error); }
+            })
+            .catch(err => alert("Failed to communicate with API."));
+        }
+    }
+</script>
+{% endblock %}
