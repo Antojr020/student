@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Campus Announcements & Broadcasts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Announcements</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-megaphone-fill text-primary"></i>
+            Campus Announcements & Notifications
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#createAnnouncementModal">
+            <i class="bi bi-plus-circle me-1"></i> New Announcement
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for a in announcements %}
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 {% if a.priority == 'Urgent' %}border-danger{% elif a.priority == 'Important' %}border-warning{% endif %}">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge {% if a.priority == 'Urgent' %}bg-danger{% elif a.priority == 'Important' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ a.priority }}
+                        </span>
+                        <span class="badge bg-light text-muted border">
+                            <i class="bi bi-people me-1"></i> Target: {{ a.target_audience }}
+                        </span>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin_delete_announcement', announcement_id=a.id) }}" class="d-inline" onsubmit="return confirm('Delete this announcement?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm border-0 p-1" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                <h5 class="fw-bold mb-2">{{ a.title }}</h5>
+                <p class="text-muted small mb-3">{{ a.content }}</p>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top text-muted small">
+                    <span>Published by: <strong>{{ a.published_by.full_name or 'Admin' if a.published_by else 'Admin' }}</strong></span>
+                    <span>{{ a.created_at.strftime('%d-%b-%Y %H:%M') if a.created_at else '' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card card-custom p-5 text-center text-muted">
+            <i class="bi bi-bell-slash fs-1 mb-2"></i>
+            No active announcements found.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal: Create Announcement -->
+<div class="modal fade" id="createAnnouncementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-megaphone me-2 text-primary"></i> Broadcast Announcement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_announcement') }}">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Announcement Title *</label>
+                        <input type="text" name="title" class="form-control" required placeholder="e.g. Schedule for Mid-Term Laboratory Exams">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Target Audience</label>
+                            <select name="target_audience" class="form-select">
+                                <option value="All" selected>All Users (Campus-wide)</option>
+                                <option value="Students">Students Only</option>
+                                <option value="Faculty">Faculty & Staff Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Priority Level</label>
+                            <select name="priority" class="form-select">
+                                <option value="Normal" selected>Normal</option>
+                                <option value="Important">Important</option>
+                                <option value="Urgent">Urgent Alert</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Announcement Details / Message *</label>
+                        <textarea name="content" class="form-control" rows="4" required placeholder="Type official notification message here..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-semibold">Publish Broadcast</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

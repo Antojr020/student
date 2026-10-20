@@ -1,75 +1,294 @@
 {% extends "base.html" %}
+{% block title %}Collegiate Administration Dashboard{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-speedometer2"></i> Admin Dashboard</h2>
-    <button class="btn btn-success fw-bold shadow-sm" onclick="generateSamples()">
-        <i class="bi bi-cloud-download"></i> Generate Sample Students (API)
-    </button>
-</div>
-
-<div class="row g-4 mb-5">
-    <div class="col-md-4">
-        <div class="card bg-info text-white shadow-sm h-100 border-0 rounded-4">
-            <div class="card-body d-flex align-items-center justify-content-between p-4">
-                <div>
-                    <h5 class="text-white-50 mb-1">Total Students</h5>
-                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_students }}</h1>
-                </div>
-                <i class="bi bi-people-fill display-4 opacity-50"></i>
-            </div>
-        </div>
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Admin Dashboard</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-speedometer2 text-primary"></i>
+            Collegiate Administration Dashboard
+        </h1>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-primary text-white shadow-sm h-100 border-0 rounded-4">
-            <div class="card-body d-flex align-items-center justify-content-between p-4">
-                <div>
-                    <h5 class="text-white-50 mb-1">Total Faculty</h5>
-                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_faculty }}</h1>
-                </div>
-                <i class="bi bi-person-workspace display-4 opacity-50"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-warning text-dark shadow-sm h-100 border-0 rounded-4">
-            <div class="card-body d-flex align-items-center justify-content-between p-4">
-                <div>
-                    <h5 class="text-dark-50 mb-1">Total Subjects</h5>
-                    <h1 class="display-5 fw-bold mb-0">{{ stats.total_subjects }}</h1>
-                </div>
-                <i class="bi bi-book-half display-4 opacity-50"></i>
-            </div>
-        </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin_students') }}" class="btn btn-outline-primary btn-sm fw-semibold">
+            <i class="bi bi-person-plus-fill me-1"></i> Register Student
+        </a>
+        <a href="{{ url_for('admin_marks_approval') }}" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-award-fill me-1"></i> Marks Approvals
+            {% if pending_marks_count > 0 %}
+            <span class="badge bg-danger ms-1">{{ pending_marks_count }}</span>
+            {% endif %}
+        </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                <h5 class="fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Semester Performance Overview</h5>
+<!-- KPI Metric Cards Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Total Students</div>
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-desc text-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Enrolled across {{ total_departments }} departments</span>
+                </div>
+            </div>
+            <div class="stat-icon primary">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Faculty & Staff</div>
+                <div class="stat-value">{{ total_faculty }}</div>
+                <div class="stat-desc text-muted">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Professors & Instructors</span>
+                </div>
+            </div>
+            <div class="stat-icon success">
+                <i class="bi bi-person-workspace"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Academic Departments</div>
+                <div class="stat-value">{{ total_departments }}</div>
+                <div class="stat-desc text-muted">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>{{ total_courses }} Degree Programmes</span>
+                </div>
+            </div>
+            <div class="stat-icon info">
+                <i class="bi bi-building"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Pass Percentage</div>
+                <div class="stat-value">{{ overall_pass_rate }}%</div>
+                <div class="stat-desc {% if overall_pass_rate >= 75 %}text-success{% else %}text-warning{% endif %}">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Semester 4 Results</span>
+                </div>
+            </div>
+            <div class="stat-icon warning">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Analytics Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Department Distribution Chart -->
+    <div class="col-lg-7">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-pie-chart-fill text-primary me-2"></i>
+                    Department Student Enrollment Distribution
+                </div>
+                <span class="badge bg-light text-muted border">Real-time DB</span>
             </div>
             <div class="card-body">
-                <canvas id="adminChart" height="100"></canvas>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Examination Performance / Grade Distribution Chart -->
+    <div class="col-lg-5">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-bar-chart-fill text-success me-2"></i>
+                    Letter Grade Distribution
+                </div>
+                <span class="badge bg-light text-muted border">Published Marks</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="gradesChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Recent Student Registrations & Audit Activity Logs -->
+<div class="row g-4">
+    <!-- Recent Students Table -->
+    <div class="col-lg-7">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-people me-2 text-primary"></i>
+                    Recent Student Enrollments
+                </div>
+                <a href="{{ url_for('admin_students') }}" class="small text-decoration-none fw-semibold">View All Students &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Register No</th>
+                            <th>Department</th>
+                            <th>Semester</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in recent_students %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="user-avatar-sm" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                        {{ s.name[:2].upper() }}
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('admin_student_detail', student_id=s.id) }}" class="fw-semibold text-main text-decoration-none">
+                                            {{ s.name }}
+                                        </a>
+                                        <div class="text-muted" style="font-size: 0.7rem;">{{ s.email or 'No email' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="font-monospace small fw-semibold">{{ s.register_no }}</span></td>
+                            <td><span class="badge bg-light text-dark border">{{ s.department }}</span></td>
+                            <td>Sem {{ s.current_semester }}</td>
+                            <td>
+                                <span class="badge {% if s.enrollment_status == 'Active' %}badge-soft-success{% else %}badge-soft-secondary{% endif %}">
+                                    {{ s.enrollment_status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No student records enrolled yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Audit Activity Stream -->
+    <div class="col-lg-5">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-shield-check me-2 text-info"></i>
+                    Recent System & Academic Activities
+                </div>
+                <a href="{{ url_for('admin_audit_logs') }}" class="small text-decoration-none fw-semibold">Audit Trail &rarr;</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" style="max-height: 380px; overflow-y: auto;">
+                    {% for log in recent_logs %}
+                    <div class="list-group-item px-3 py-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-primary-subtle text-primary font-monospace" style="font-size: 0.68rem;">
+                                {{ log.action }}
+                            </span>
+                            <small class="text-muted" style="font-size: 0.7rem;">
+                                {{ log.timestamp.strftime('%H:%M &bull; %d-%b') if log.timestamp else '' }}
+                            </small>
+                        </div>
+                        <p class="mb-0 small text-truncate text-muted">{{ log.description }}</p>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">No audit activities recorded.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-    function generateSamples() {
-        if(confirm("Fetch 5 random student profiles from RandomUser.me API and add them to the database?")) {
-            fetch('/api/generate_samples', {method: 'POST'})
-            .then(res => res.json())
-            .then(data => {
-                if(data.message) { 
-                    alert("Success: " + data.message); 
-                    window.location.reload(); 
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Department Enrollment Distribution Donut Chart
+    const deptCtx = document.getElementById('deptChart');
+    if (deptCtx) {
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ dept_labels | tojson }},
+                datasets: [{
+                    label: 'Enrolled Students',
+                    data: {{ dept_counts | tojson }},
+                    backgroundColor: [
+                        '#1e3a8a', '#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6'
+                    ],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
                 }
-                else { alert("Error: " + data.error); }
-            })
-            .catch(err => alert("Failed to communicate with API."));
-        }
+            }
+        });
     }
+
+    // 2. Grade Distribution Pie/Doughnut Chart
+    const gradesCtx = document.getElementById('gradesChart');
+    if (gradesCtx) {
+        new Chart(gradesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ grade_labels | tojson }},
+                datasets: [{
+                    data: {{ grade_counts | tojson }},
+                    backgroundColor: [
+                        '#15803d', '#16a34a', '#2563eb', '#0891b2', '#d97706', '#ea580c', '#dc2626'
+                    ],
+                    borderWidth: 2,
+                    borderColor: 'var(--bg-card)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

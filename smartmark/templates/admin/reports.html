@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Collegiate Reports & Academic Analytics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Reports & Analytics</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-bar-chart-line-fill text-primary"></i>
+            Collegiate Reports & Academic Analytics
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print Report
+        </button>
+    </div>
+</div>
+
+<!-- Reports Hub Navigation Cards -->
+<div class="row g-4 mb-4">
+    <!-- 1. Top Performing Students (Dean's Honour Roll) -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center bg-success-subtle">
+                <div class="fw-bold text-success">
+                    <i class="bi bi-trophy-fill me-2"></i>
+                    Dean's Honour Roll: Top Performing Students
+                </div>
+                <a href="{{ url_for('admin_export_reports', report_type='toppers') }}" class="btn btn-outline-success btn-sm py-0 px-2 fw-semibold" style="font-size: 0.75rem;">
+                    <i class="bi bi-download me-1"></i> CSV
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Department</th>
+                            <th>SGPA</th>
+                            <th>CGPA</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rank, st, sgpa, cgpa in top_students %}
+                        <tr>
+                            <td>
+                                <span class="badge {% if rank == 1 %}bg-warning text-dark{% elif rank == 2 %}bg-secondary{% elif rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} rounded-circle p-2" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">
+                                    {{ rank }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-main">{{ st.name }}</div>
+                                <span class="font-monospace text-muted small">{{ st.register_no }}</span>
+                            </td>
+                            <td>{{ st.department }}</td>
+                            <td><span class="fw-bold text-primary">{{ "%.2f"|format(sgpa) }}</span></td>
+                            <td><span class="fw-bold text-success">{{ "%.2f"|format(cgpa) }}</span></td>
+                            <td><span class="badge badge-soft-success">Distinction</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No student rankings available yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Students Requiring Academic Support (RA / Arrears) -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center bg-danger-subtle">
+                <div class="fw-bold text-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Academic Support Required (RA / Re-Appear)
+                </div>
+                <a href="{{ url_for('admin_export_reports', report_type='support') }}" class="btn btn-outline-danger btn-sm py-0 px-2 fw-semibold" style="font-size: 0.75rem;">
+                    <i class="bi bi-download me-1"></i> CSV
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Subject</th>
+                            <th>Total Marks</th>
+                            <th>Cutoff</th>
+                            <th>Deficit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in failed_marks %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-main">{{ m.student.name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.student.register_no }}</span>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold">{{ m.subject.subject_name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.subject.subject_code }}</span>
+                            </td>
+                            <td><span class="fw-bold text-danger">{{ m.total_marks|round(1) }}</span></td>
+                            <td>{{ m.subject.pass_marks }}</td>
+                            <td>
+                                <span class="badge badge-soft-danger">
+                                    -{{ (m.subject.pass_marks - m.total_marks)|round(1) }} marks
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-success fw-semibold">
+                                <i class="bi bi-check-circle-fill me-1"></i> Remarkable! No students currently require arrear support.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Department-Wise Academic Performance Summary -->
+<div class="card card-custom mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">
+            <i class="bi bi-table me-2 text-primary"></i>
+            Department-Wise Enrollment & Examination Pass Summary
+        </div>
+        <a href="{{ url_for('admin_export_reports', report_type='departments') }}" class="btn btn-outline-primary btn-sm py-0 px-2 fw-semibold" style="font-size: 0.75rem;">
+            <i class="bi bi-download me-1"></i> Export Summary CSV
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Department Code</th>
+                    <th>Department Name</th>
+                    <th>Degree Courses</th>
+                    <th>Enrolled Students</th>
+                    <th>Faculty Count</th>
+                    <th>Pass Rate (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in dept_summaries %}
+                <tr>
+                    <td><span class="badge bg-primary font-monospace">{{ d.code }}</span></td>
+                    <td class="fw-bold text-main">{{ d.name }}</td>
+                    <td>{{ d.courses_count }} Programmes</td>
+                    <td><span class="fw-semibold">{{ d.students_count }}</span></td>
+                    <td>{{ d.faculty_count }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2" style="max-width: 140px;">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar {% if d.pass_rate >= 80 %}bg-success{% elif d.pass_rate >= 60 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ d.pass_rate }}%;"></div>
+                            </div>
+                            <span class="fw-bold">{{ d.pass_rate }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}My Attendance Record - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('student_dashboard') }}">Home</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Attendance Records</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-calendar-event text-primary"></i>
+            My Attendance History & Exam Eligibility
+        </h1>
+    </div>
+</div>
+
+<!-- Attendance Status Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Overall Attendance</div>
+                <div class="stat-value {% if overall_attendance >= 75 %}text-success{% else %}text-danger{% endif %}">{{ overall_attendance }}%</div>
+                <div class="stat-desc text-muted">Across all semester subjects</div>
+            </div>
+            <div class="stat-icon {% if overall_attendance >= 75 %}success{% else %}danger{% endif %}"><i class="bi bi-pie-chart-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Minimum Requirement</div>
+                <div class="stat-value text-primary">75.0%</div>
+                <div class="stat-desc text-muted">College exam eligibility rule</div>
+            </div>
+            <div class="stat-icon primary"><i class="bi bi-shield-check"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Examination Eligibility</div>
+                <div class="stat-value {% if overall_attendance >= 75 %}text-success{% else %}text-danger{% endif %}">
+                    {{ 'ELIGIBLE' if overall_attendance >= 75 else 'SHORTAGE' }}
+                </div>
+                <div class="stat-desc {% if overall_attendance >= 75 %}text-success{% else %}text-danger{% endif %}">
+                    {{ 'Clear for end-term exams' if overall_attendance >= 75 else 'Contact academic dean' }}
+                </div>
+            </div>
+            <div class="stat-icon {% if overall_attendance >= 75 %}success{% else %}danger{% endif %}">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject-Wise Attendance Breakdown Table -->
+<div class="card card-custom overflow-hidden mb-4">
+    <div class="card-header fw-semibold">
+        <i class="bi bi-book-half text-primary me-2"></i> Subject-Wise Attendance Breakdown
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Subject Code</th>
+                    <th>Subject Title</th>
+                    <th>Conducted Sessions</th>
+                    <th>Attended</th>
+                    <th>Attendance %</th>
+                    <th>Eligibility Standing</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in subject_attendance %}
+                <tr>
+                    <td><span class="font-monospace fw-bold text-primary">{{ item.subject.subject_code }}</span></td>
+                    <td class="fw-semibold text-main">{{ item.subject.subject_name }}</td>
+                    <td>{{ item.total }} classes</td>
+                    <td><span class="fw-bold">{{ item.attended }}</span> classes</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2" style="max-width: 140px;">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar {% if item.percent >= 75 %}bg-success{% else %}bg-danger{% endif %}" style="width: {{ item.percent }}%;"></div>
+                            </div>
+                            <span class="fw-bold {% if item.percent >= 75 %}text-success{% else %}text-danger{% endif %}">{{ item.percent }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if item.percent >= 75 %}
+                        <span class="badge badge-soft-success"><i class="bi bi-check-circle me-1"></i> Satisfied</span>
+                        {% else %}
+                        <span class="badge badge-soft-danger"><i class="bi bi-exclamation-triangle me-1"></i> Shortage Warning</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center py-4 text-muted">No attendance sessions recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Academic Marks Entry - Faculty Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('faculty_dashboard') }}">Faculty</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Marks Entry</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-pencil-square text-primary"></i>
+            Student Marks Entry & Evaluation
+        </h1>
+    </div>
+</div>
+
+<!-- Subject & Examination Selector Card -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('faculty_marks_entry') }}" class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold small text-muted">Select Assigned Subject</label>
+                <select name="subject_id" class="form-select" onchange="this.form.submit()">
+                    {% for a in assigned_subjects %}
+                    {% set s = a.subject %}
+                    <option value="{{ s.id }}" {% if selected_subject and selected_subject.id == s.id %}selected{% endif %}>
+                        {{ s.subject_code }} - {{ s.subject_name }} (Sem {{ s.semester }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold small text-muted">Select Examination Schedule</label>
+                <select name="examination_id" class="form-select" onchange="this.form.submit()">
+                    {% for e in examinations %}
+                    <option value="{{ e.id }}" {% if selected_exam and selected_exam.id == e.id %}selected{% endif %}>
+                        {{ e.name }} (Sem {{ e.semester }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Load Roster
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_subject and selected_exam %}
+<!-- Subject Rules & Parameters Banner -->
+<div class="alert alert-info d-flex justify-content-between align-items-center mb-4 py-2 px-3 rounded-3">
+    <div class="small">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Grading Subject: <strong>{{ selected_subject.subject_code }} - {{ selected_subject.subject_name }}</strong> &bull;
+        Max Internal: <strong>{{ selected_subject.max_internal|round|int }}</strong> &bull;
+        Max External: <strong>{{ selected_subject.max_external|round|int }}</strong> &bull;
+        Max Total: <strong>{{ selected_subject.max_marks|round|int }}</strong> &bull;
+        Pass Cutoff: <strong>{{ selected_subject.pass_marks|round|int }}</strong>
+    </div>
+    <span class="badge bg-light text-dark border">Section A Roster</span>
+</div>
+
+<!-- Marks Entry Form Table -->
+<form method="POST" action="{{ url_for('faculty_save_marks') }}">
+    <input type="hidden" name="subject_id" value="{{ selected_subject.id }}">
+    <input type="hidden" name="examination_id" value="{{ selected_exam.id }}">
+
+    <div class="card card-custom overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-custom align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Register No</th>
+                        <th>Student Name</th>
+                        <th style="width: 140px;">Internal (Max {{ selected_subject.max_internal|round|int }})</th>
+                        <th style="width: 140px;">External (Max {{ selected_subject.max_external|round|int }})</th>
+                        <th>Total (100)</th>
+                        <th>Projected Grade</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in student_marks_data %}
+                    {% set st = item.student %}
+                    {% set m = item.mark %}
+                    <tr>
+                        <td>
+                            <span class="font-monospace fw-bold text-primary">{{ st.register_no }}</span>
+                            <input type="hidden" name="student_ids" value="{{ st.id }}">
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-main">{{ st.name }}</div>
+                        </td>
+                        <td>
+                            <input type="number" 
+                                   name="internal_{{ st.id }}" 
+                                   class="form-control form-control-sm marks-input internal-input font-monospace fw-semibold" 
+                                   value="{{ m.internal_marks + m.assignment_marks + m.practical_marks if m else 0 }}" 
+                                   min="0" 
+                                   max="{{ selected_subject.max_internal }}" 
+                                   step="0.5" 
+                                   data-student="{{ st.id }}"
+                                   {% if m and m.status == 'approved' %}readonly{% endif %}>
+                        </td>
+                        <td>
+                            <input type="number" 
+                                   name="external_{{ st.id }}" 
+                                   class="form-control form-control-sm marks-input external-input font-monospace fw-semibold" 
+                                   value="{{ m.external_marks if m else 0 }}" 
+                                   min="0" 
+                                   max="{{ selected_subject.max_external }}" 
+                                   step="0.5" 
+                                   data-student="{{ st.id }}"
+                                   {% if m and m.status == 'approved' %}readonly{% endif %}>
+                        </td>
+                        <td>
+                            <span class="fw-bold font-monospace fs-6" id="total_{{ st.id }}">
+                                {{ m.total_marks|round(1) if m else 0.0 }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-grade-{{ m.grade.lower() if m and m.grade != 'A+' else 'ap' }}" id="grade_{{ st.id }}">
+                                {{ m.grade if m else '-' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if m %}
+                                {% if m.status == 'approved' %}
+                                <span class="badge badge-soft-success"><i class="bi bi-lock-fill me-1"></i> Approved</span>
+                                {% elif m.status == 'submitted' %}
+                                <span class="badge badge-soft-warning"><i class="bi bi-hourglass-split me-1"></i> Submitted</span>
+                                {% else %}
+                                <span class="badge badge-soft-secondary">Draft</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge badge-soft-secondary">Not Entered</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center py-4 text-muted">No students currently enrolled in this semester/course.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                <i class="bi bi-shield-lock me-1"></i>
+                Validations are performed both client-side and server-side against authorized subject parameters.
+            </span>
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="draft" class="btn btn-outline-primary fw-semibold btn-sm">
+                    <i class="bi bi-save me-1"></i> Save as Draft
+                </button>
+                <button type="submit" name="action" value="submit" class="btn btn-primary fw-semibold btn-sm" onclick="return confirm('Submit these marks for administrative verification?');">
+                    <i class="bi bi-send-check me-1"></i> Submit for Admin Approval
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function calculateLive(studentId) {
+        const intInput = document.querySelector(`.internal-input[data-student="${studentId}"]`);
+        const extInput = document.querySelector(`.external-input[data-student="${studentId}"]`);
+        const totalSpan = document.getElementById(`total_${studentId}`);
+        const gradeSpan = document.getElementById(`grade_${studentId}`);
+
+        if (intInput && extInput && totalSpan && gradeSpan) {
+            const intVal = parseFloat(intInput.value) || 0;
+            const extVal = parseFloat(extInput.value) || 0;
+            const total = Math.round((intVal + extVal) * 10) / 10;
+            totalSpan.textContent = total.toFixed(1);
+
+            let grade = 'RA';
+            let bgClass = 'bg-danger text-white';
+            if (total >= 90) { grade = 'O'; bgClass = 'badge-grade-o'; }
+            else if (total >= 80) { grade = 'A+'; bgClass = 'badge-grade-ap'; }
+            else if (total >= 70) { grade = 'A'; bgClass = 'badge-grade-a'; }
+            else if (total >= 60) { grade = 'B+'; bgClass = 'badge-grade-bp'; }
+            else if (total >= 50) { grade = 'B'; bgClass = 'badge-grade-b'; }
+            else if (total >= 40) { grade = 'C'; bgClass = 'badge-grade-c'; }
+
+            gradeSpan.textContent = grade;
+            gradeSpan.className = `badge ${bgClass}`;
+        }
+    }
+
+    document.querySelectorAll('.marks-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const studentId = this.getAttribute('data-student');
+            calculateLive(studentId);
+        });
+    });
+});
+</script>
+{% endblock %}

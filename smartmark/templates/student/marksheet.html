@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Official Marksheet - {{ student.register_no }}{% endblock %}
+
+{% block content %}
+<div class="page-header no-print">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('student_dashboard') if current_user.role == 'student' else url_for('admin_dashboard') }}">Home</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Statement of Grades & Marks</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-file-earmark-text-fill text-primary"></i>
+            Official Statement of Grades & Marks
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print Marksheet
+        </button>
+        <a href="{{ url_for('download_marksheet', student_id=student.id, semester=student.current_semester) }}" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+        </a>
+    </div>
+</div>
+
+<!-- Official Printable Marksheet Container -->
+<div class="card card-custom marksheet-print-container p-4 p-md-5 mb-5 shadow-sm">
+    <!-- Institutional Header -->
+    <div class="text-center pb-3 border-bottom border-dark border-2 mb-4">
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+            <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-mortarboard-fill fs-3"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold mb-0 text-dark letter-spacing-1 text-uppercase">SmartMark Institute of Technology & Science</h3>
+                <div class="text-muted small">Autonomous Institution Affiliated to State Technological University &bull; Accredited 'A++' by NAAC</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Technology Corridor Highway, Chennai &bull; Web: www.smartmark.edu &bull; Tel: +91 44 2345 6789</div>
+            </div>
+        </div>
+        <div class="bg-light py-1 px-3 rounded border d-inline-block fw-bold text-primary mt-2" style="font-size: 0.95rem;">
+            OFFICIAL STATEMENT OF GRADES & MARKS &bull; SEMESTER {{ student.current_semester }}
+        </div>
+    </div>
+
+    <!-- Student Particulars Grid -->
+    <div class="row g-3 p-3 bg-light rounded-3 border mb-4" style="font-size: 0.85rem;">
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Student Full Name</span>
+            <strong class="text-dark">{{ student.name.upper() }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Registration Number</span>
+            <strong class="font-monospace text-primary fs-6">{{ student.register_no }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Department</span>
+            <strong class="text-dark">{{ student.department }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Degree Programme</span>
+            <strong class="text-dark">{{ student.programme }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Academic Year</span>
+            <strong class="text-dark">2025-2026</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Semester Level</span>
+            <strong class="text-dark">Semester {{ student.current_semester }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Date of Publication</span>
+            <strong class="text-dark">{{ pub_date }}</strong>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <span class="text-muted d-block small">Enrollment Status</span>
+            <span class="badge badge-soft-success">Active & Verified</span>
+        </div>
+    </div>
+
+    <!-- Marks Breakdown Table -->
+    <div class="table-responsive mb-4">
+        <table class="table table-bordered align-middle text-center mb-0" style="font-size: 0.85rem;">
+            <thead class="table-light border-dark">
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Course Code</th>
+                    <th class="text-start">Course Title</th>
+                    <th>Credits</th>
+                    <th>Internal (40)</th>
+                    <th>External (60)</th>
+                    <th>Total (100)</th>
+                    <th>Grade</th>
+                    <th>Points</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in marks %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td class="font-monospace fw-semibold">{{ m.subject.subject_code }}</td>
+                    <td class="text-start fw-semibold">{{ m.subject.subject_name }}</td>
+                    <td>{{ m.subject.credits }}</td>
+                    <td>{{ (m.internal_marks + m.assignment_marks + m.practical_marks)|round(1) }}</td>
+                    <td>{{ m.external_marks|round(1) }}</td>
+                    <td><strong>{{ m.total_marks|round(1) }}</strong></td>
+                    <td><span class="fw-bold">{{ m.grade }}</span></td>
+                    <td>{{ m.grade_point }}</td>
+                    <td>
+                        {% if m.result == 'PASS' %}
+                        <span class="text-success fw-bold">PASS</span>
+                        {% else %}
+                        <span class="text-danger fw-bold">FAIL</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="text-center py-4 text-muted">No marks records found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Academic Summary Card -->
+    <div class="row g-3 p-3 bg-light rounded-3 border mb-4" style="font-size: 0.88rem;">
+        <div class="col-md-3">
+            <span class="text-muted d-block small">Total Credits Registered</span>
+            <strong class="fs-6">{{ total_credits }}</strong>
+        </div>
+        <div class="col-md-3">
+            <span class="text-muted d-block small">Semester SGPA</span>
+            <strong class="fs-5 text-primary">{{ "%.2f"|format(sgpa) }}</strong>
+        </div>
+        <div class="col-md-3">
+            <span class="text-muted d-block small">Cumulative CGPA</span>
+            <strong class="fs-5 text-success">{{ "%.2f"|format(cgpa) }}</strong>
+        </div>
+        <div class="col-md-3">
+            <span class="text-muted d-block small">Final Semester Standing</span>
+            <strong class="fs-6 {% if overall_result == 'PASS' %}text-success{% else %}text-danger{% endif %}">
+                {{ overall_result }}
+            </strong>
+        </div>
+    </div>
+
+    <!-- Grading Scale Key -->
+    <div class="p-2 border rounded bg-white small text-muted text-center mb-5" style="font-size: 0.72rem;">
+        <strong>Grading Scale:</strong> O (90-100%, 10 pts) &bull; A+ (80-89%, 9 pts) &bull; A (70-79%, 8 pts) &bull; B+ (60-69%, 7 pts) &bull; B (50-59%, 6 pts) &bull; C (40-49%, 5 pts) &bull; RA (&lt;40%, 0 pts - Re-appear)
+    </div>
+
+    <!-- Official Signatures Block -->
+    <div class="row pt-5 text-center mt-4">
+        <div class="col-4">
+            <div class="border-top border-dark pt-2 fw-semibold small">Prepared & Verified By</div>
+            <small class="text-muted" style="font-size: 0.68rem;">Academic Records Cell</small>
+        </div>
+        <div class="col-4">
+            <div class="border-top border-dark pt-2 fw-semibold small">Controller of Examinations</div>
+            <small class="text-muted" style="font-size: 0.68rem;">SmartMark Examination Office</small>
+        </div>
+        <div class="col-4">
+            <div class="border-top border-dark pt-2 fw-semibold small">Principal / Dean of Academics</div>
+            <small class="text-muted" style="font-size: 0.68rem;">College of Technology</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,39 +1,143 @@
 {% extends "base.html" %}
+{% block title %}Sign In - Academic Portals{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5">
-        <div class="card shadow-lg border-0 rounded-4">
-            <div class="card-header bg-primary text-white text-center rounded-top-4 py-4">
-                <h4 class="mb-0 fw-bold"><i class="bi bi-person-circle"></i> Login to SmartMark</h4>
-                <small class="text-white-50">Manage. Analyze. Improve.</small>
-            </div>
-            <div class="card-body p-4">
-                {% if error %}
-                <div class="alert alert-danger d-flex align-items-center">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+<div class="container py-4">
+    <div class="row justify-content-center align-items-center min-vh-75 mt-3">
+        <div class="col-xl-9 col-lg-10">
+            <div class="card card-custom border-0 shadow-lg overflow-hidden rounded-4">
+                <div class="row g-0">
+                    <!-- Left Brand Hero Banner -->
+                    <div class="col-lg-5 d-none d-lg-flex flex-column justify-content-between p-5 text-white" 
+                         style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); position: relative;">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-4">
+                                <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                    <i class="bi bi-mortarboard-fill fs-4"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold mb-0 text-white">SmartMark</h4>
+                                    <small class="text-info text-uppercase letter-spacing-1" style="font-size: 0.7rem;">College ERP System</small>
+                                </div>
+                            </div>
+                            
+                            <h3 class="fw-bold mb-3 mt-4">Unified Collegiate Management System</h3>
+                            <p class="text-white-50 small mb-4">
+                                Centralized academic governance platform supporting seamless administration, marks processing, student dossiers, attendance tracking, and performance analytics.
+                            </p>
+
+                            <div class="d-flex flex-column gap-3 mt-4 text-white-50 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-shield-check text-info fs-5"></i>
+                                    <span>Role-Based Secure Access Control</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-graph-up-arrow text-success fs-5"></i>
+                                    <span>Automated SGPA & CGPA Calculation</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-file-earmark-pdf text-warning fs-5"></i>
+                                    <span>Official ReportLab Digital Marksheets</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-top border-white-10">
+                            <small class="text-white-50">&copy; 2026 SmartMark Institute of Technology. All Rights Reserved.</small>
+                        </div>
+                    </div>
+
+                    <!-- Right Login Form Section -->
+                    <div class="col-lg-7 p-4 p-md-5">
+                        <div class="text-center text-lg-start mb-4">
+                            <h3 class="fw-bold text-main mb-1">Academic Sign In</h3>
+                            <p class="text-muted small">Select your portal role or sign in with institutional credentials.</p>
+                        </div>
+
+                        <!-- One-Click Demo Role Selectors (Instant Review) -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-muted small text-uppercase" style="font-size: 0.72rem;">
+                                    <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Quick Demo Logins:
+                                </span>
+                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">One-Click Fill</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-dark fw-semibold" onclick="quickFill('superadmin', 'Password@123')">
+                                    <i class="bi bi-shield-lock-fill text-danger me-1"></i> Super Admin
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" onclick="quickFill('admin', 'admin123')">
+                                    <i class="bi bi-person-gear text-primary me-1"></i> College Admin
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success fw-semibold" onclick="quickFill('faculty_cs', 'faculty123')">
+                                    <i class="bi bi-person-workspace text-success me-1"></i> Faculty
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info fw-semibold" onclick="quickFill('student_arun', 'student123')">
+                                    <i class="bi bi-mortarboard text-info me-1"></i> Student
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold" onclick="quickFill('parent_kumar', 'parent123')">
+                                    <i class="bi bi-people text-secondary me-1"></i> Parent
+                                </button>
+                            </div>
+                        </div>
+
+                        {% if error %}
+                        <div class="alert alert-danger d-flex align-items-center py-2 px-3 small rounded-3 mb-3">
+                            <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+                            <div>{{ error }}</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Login Form -->
+                        <form method="POST" action="{{ url_for('login') }}">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-muted">Username or Registration ID</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                    <input type="text" id="usernameInput" name="username" class="form-control border-start-0 ps-0" required placeholder="Enter username / register no">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="form-label fw-semibold small text-muted">Password</label>
+                                    <a href="#" class="small text-decoration-none text-muted" onclick="alert('For demo evaluation, use the one-click demo chips above or default password admin123 / student123.'); return false;">Forgot password?</a>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                    <input type="password" id="passwordInput" name="password" class="form-control border-start-0 ps-0" required placeholder="Enter your password">
+                                    <button class="btn btn-outline-secondary border border-start-0" type="button" id="togglePasswordBtn">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <span>Authenticate & Sign In</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                {% endif %}
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Username</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input type="text" name="username" class="form-control" required placeholder="Enter username">
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input type="password" name="password" class="form-control" required placeholder="Enter password">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
-                        Secure Login <i class="bi bi-arrow-right-circle"></i>
-                    </button>
-                </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function quickFill(user, pass) {
+        document.getElementById('usernameInput').value = user;
+        document.getElementById('passwordInput').value = pass;
+    }
+
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('passwordInput');
+    if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            togglePasswordBtn.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        });
+    }
+</script>
 {% endblock %}

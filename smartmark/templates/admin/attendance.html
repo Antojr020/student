@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Collegiate Attendance Management & Alerts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Attendance Roster</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-clock-history text-primary"></i>
+            Collegiate Attendance Overview & Shortage Alerts
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin_export_attendance') }}" class="btn btn-outline-secondary btn-sm fw-semibold">
+            <i class="bi bi-download me-1"></i> Export Attendance CSV
+        </a>
+    </div>
+</div>
+
+<!-- Attendance KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Institution Average Attendance</div>
+                <div class="stat-value text-primary">{{ overall_attendance }}%</div>
+                <div class="stat-desc text-muted">Across all active batches</div>
+            </div>
+            <div class="stat-icon primary"><i class="bi bi-calendar2-check-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Shortage Threshold</div>
+                <div class="stat-value text-danger">75.0%</div>
+                <div class="stat-desc text-danger">Minimum required for exams</div>
+            </div>
+            <div class="stat-icon danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Students Below Threshold</div>
+                <div class="stat-value {% if low_attendance_students %}text-danger{% else %}text-success{% endif %}">
+                    {{ low_attendance_students|length }}
+                </div>
+                <div class="stat-desc text-muted">Require academic notice</div>
+            </div>
+            <div class="stat-icon {% if low_attendance_students %}danger{% else %}success{% endif %}">
+                <i class="bi bi-person-x-fill"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Attendance Warnings Alert Table -->
+<div class="card card-custom mb-4 border-danger">
+    <div class="card-header bg-danger-subtle d-flex justify-content-between align-items-center">
+        <div class="fw-bold text-danger">
+            <i class="bi bi-shield-exclamation me-2"></i>
+            Students with Critical Attendance Shortage (&lt; 75%)
+        </div>
+        <span class="badge bg-danger">{{ low_attendance_students|length }} Flagged</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Registration No</th>
+                    <th>Student Name</th>
+                    <th>Department & Sem</th>
+                    <th>Classes Attended</th>
+                    <th>Attendance %</th>
+                    <th>Eligibility Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in low_attendance_students %}
+                <tr>
+                    <td><span class="font-monospace fw-bold text-danger">{{ st.student.register_no }}</span></td>
+                    <td class="fw-semibold text-main">{{ st.student.name }}</td>
+                    <td>{{ st.student.department }} &bull; Sem {{ st.student.current_semester }}</td>
+                    <td>{{ st.attended }} / {{ st.total }} sessions</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar bg-danger" style="width: {{ st.percent }}%;"></div>
+                            </div>
+                            <span class="fw-bold text-danger">{{ st.percent }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-soft-danger"><i class="bi bi-x-circle me-1"></i> Exam Ineligible</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-success fw-semibold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Excellent! All students meet or exceed the 75% attendance threshold.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Complete Student Attendance Roster -->
+<div class="card card-custom overflow-hidden">
+    <div class="card-header fw-semibold">
+        <i class="bi bi-people-fill text-primary me-2"></i> Complete Student Attendance Roster
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Register No</th>
+                    <th>Student Name</th>
+                    <th>Department</th>
+                    <th>Semester</th>
+                    <th>Classes Attended</th>
+                    <th>Percentage</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in all_attendance_records %}
+                <tr>
+                    <td><span class="font-monospace text-primary fw-bold">{{ st.student.register_no }}</span></td>
+                    <td class="fw-semibold text-main">{{ st.student.name }}</td>
+                    <td>{{ st.student.department }}</td>
+                    <td>Sem {{ st.student.current_semester }}</td>
+                    <td>{{ st.attended }} / {{ st.total }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2" style="max-width: 140px;">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar {% if st.percent >= 75 %}bg-success{% else %}bg-danger{% endif %}" style="width: {{ st.percent }}%;"></div>
+                            </div>
+                            <span class="fw-bold {% if st.percent >= 75 %}text-success{% else %}text-danger{% endif %}">{{ st.percent }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if st.percent >= 75 %}
+                        <span class="badge badge-soft-success">Eligible</span>
+                        {% else %}
+                        <span class="badge badge-soft-danger">Shortage Warning</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

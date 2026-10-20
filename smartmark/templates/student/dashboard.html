@@ -1,75 +1,217 @@
 {% extends "base.html" %}
+{% block title %}Student Academic Portal - {{ student.name }}{% endblock %}
+
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-        <h2 class="fw-bold mb-1">Welcome, {{ student.name }}</h2>
-        <p class="text-muted mb-0">
-            <i class="bi bi-person-badge"></i> {{ student.register_no }} | 
-            <i class="bi bi-building"></i> {{ student.department }} | 
-            <i class="bi bi-mortarboard"></i> {{ student.programme }}
-        </p>
-    </div>
-    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        <a href="{{ url_for('download_marksheet', student_id=student.id, semester=student.semester) }}" class="btn btn-primary fw-bold shadow-sm">
-            <i class="bi bi-file-earmark-pdf-fill"></i> Download Mark Sheet
-        </a>
-    </div>
-</div>
-
-<div class="row g-4 mb-5">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-left-primary h-100 rounded-4">
-            <div class="card-body p-4 text-center">
-                <h5 class="text-muted text-uppercase fw-bold mb-3">Current SGPA</h5>
-                <h1 class="display-3 fw-bold text-primary">{{ "%.2f"|format(sgpa) }}</h1>
+<!-- Student Welcome & Particulars Banner -->
+<div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #fff;">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar-sm" style="width: 58px; height: 58px; font-size: 1.5rem; background: rgba(255, 255, 255, 0.15); color: #fff; border-color: rgba(255, 255, 255, 0.4);">
+                    {{ student.name[:2].upper() }}
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1 text-white">Welcome back, {{ student.name }}!</h3>
+                    <div class="text-white-50 small d-flex flex-wrap gap-3">
+                        <span><i class="bi bi-person-badge me-1"></i> Register No: <strong class="text-white">{{ student.register_no }}</strong></span>
+                        <span><i class="bi bi-building me-1"></i> {{ student.department }}</span>
+                        <span><i class="bi bi-mortarboard me-1"></i> {{ student.programme }}</span>
+                        <span><i class="bi bi-calendar3 me-1"></i> Semester {{ student.current_semester }} (Year {{ student.year }})</span>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow-sm border-left-success h-100 rounded-4">
-            <div class="card-body p-4 text-center">
-                <h5 class="text-muted text-uppercase fw-bold mb-3">Overall CGPA</h5>
-                <h1 class="display-3 fw-bold text-success">{{ "%.2f"|format(cgpa) }}</h1>
-            </div>
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+            <a href="{{ url_for('student_marksheet') }}" class="btn btn-light fw-bold shadow-sm me-2">
+                <i class="bi bi-file-earmark-text me-1"></i> View Marksheet
+            </a>
+            <a href="{{ url_for('download_marksheet', student_id=student.id, semester=student.current_semester) }}" class="btn btn-outline-light fw-bold shadow-sm">
+                <i class="bi bi-download me-1"></i> Download PDF
+            </a>
         </div>
     </div>
 </div>
 
-<h4 class="fw-bold mb-3"><i class="bi bi-journal-check"></i> Semester Marks Breakdown</h4>
-<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th class="py-3 px-4">Subject</th>
-                    <th class="py-3">Internal</th>
-                    <th class="py-3">External</th>
-                    <th class="py-3">Total</th>
-                    <th class="py-3">Grade</th>
-                    <th class="py-3">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mark in marks %}
-                <tr>
-                    <td class="px-4 fw-semibold">{{ mark.subject.subject_name }}</td>
-                    <td>{{ mark.internal_marks + mark.assignment_marks + mark.practical_marks }}</td>
-                    <td>{{ mark.external_marks }}</td>
-                    <td class="fw-bold">{{ mark.total_marks }}</td>
-                    <td><span class="badge {% if mark.result == 'PASS' %}bg-success{% else %}bg-danger{% endif %} fs-6">{{ mark.grade }}</span></td>
-                    <td>
-                        {% if mark.result == 'PASS' %}
-                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> PASS</span>
+<!-- Academic Standing KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Semester SGPA</div>
+                <div class="stat-value text-primary">{{ "%.2f"|format(sgpa) }}</div>
+                <div class="stat-desc text-muted">10-Point Scale (Sem {{ student.current_semester }})</div>
+            </div>
+            <div class="stat-icon primary"><i class="bi bi-award-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Cumulative CGPA</div>
+                <div class="stat-value text-success">{{ "%.2f"|format(cgpa) }}</div>
+                <div class="stat-desc text-muted">Overall Academic Progress</div>
+            </div>
+            <div class="stat-icon success"><i class="bi bi-trophy-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Attendance Rate</div>
+                <div class="stat-value {% if attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">{{ attendance_rate }}%</div>
+                <div class="stat-desc {% if attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">
+                    {{ 'Exam Eligible (>=75%)' if attendance_rate >= 75 else 'Attendance Shortage!' }}
+                </div>
+            </div>
+            <div class="stat-icon {% if attendance_rate >= 75 %}success{% else %}danger{% endif %}"><i class="bi bi-clock-history"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Academic Status</div>
+                <div class="stat-value {% if overall_result == 'PASS' %}text-success{% else %}text-danger{% endif %}">{{ overall_result }}</div>
+                <div class="stat-desc text-muted">{{ total_credits }} Total Credits</div>
+            </div>
+            <div class="stat-icon {% if overall_result == 'PASS' %}success{% else %}danger{% endif %}"><i class="bi bi-check-circle-fill"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Marks Breakdown & Performance Chart -->
+<div class="row g-4 mb-4">
+    <!-- Marks Breakdown Table -->
+    <div class="col-lg-7">
+        <div class="card card-custom h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-journal-check text-primary me-2"></i>
+                    Semester {{ student.current_semester }} Published Statement of Marks
+                </div>
+                <a href="{{ url_for('student_marksheet') }}" class="small text-decoration-none fw-semibold">Detailed Sheet &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Credits</th>
+                            <th>Internal</th>
+                            <th>External</th>
+                            <th>Total</th>
+                            <th>Grade</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in marks %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-main">{{ m.subject.subject_name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.subject.subject_code }}</span>
+                            </td>
+                            <td>{{ m.subject.credits }}</td>
+                            <td>{{ (m.internal_marks + m.assignment_marks + m.practical_marks)|round(1) }}</td>
+                            <td>{{ m.external_marks|round(1) }}</td>
+                            <td><span class="fw-bold">{{ m.total_marks|round(1) }}</span></td>
+                            <td>
+                                <span class="badge badge-grade-{{ m.grade.lower() if m.grade != 'A+' else 'ap' }}">
+                                    {{ m.grade }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if m.result == 'PASS' %}
+                                <span class="badge badge-soft-success">PASS</span>
+                                {% else %}
+                                <span class="badge badge-soft-danger">FAIL</span>
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% else %}
-                        <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i> FAIL</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="text-center py-5 text-muted">No marks published for this semester yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">No marks published for this semester yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Performance Radar / Bar Chart -->
+    <div class="col-lg-5">
+        <div class="card card-custom h-100">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-bar-chart-fill text-primary me-2"></i>
+                Subject Performance Visualizer
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="studentPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Campus Announcements Widget -->
+<div class="card card-custom">
+    <div class="card-header fw-semibold">
+        <i class="bi bi-megaphone-fill text-warning me-2"></i>
+        Recent Collegiate Announcements
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for a in announcements %}
+            <div class="list-group-item p-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge {% if a.priority == 'Urgent' %}bg-danger{% elif a.priority == 'Important' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                        {{ a.priority }}
+                    </span>
+                    <small class="text-muted">{{ a.created_at.strftime('%d-%b-%Y') if a.created_at else '' }}</small>
+                </div>
+                <h6 class="fw-bold mb-1">{{ a.title }}</h6>
+                <p class="mb-0 small text-muted">{{ a.content }}</p>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">No announcements at this time.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const perfCtx = document.getElementById('studentPerformanceChart');
+    if (perfCtx) {
+        new Chart(perfCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ subject_names | tojson }},
+                datasets: [{
+                    label: 'Marks Obtained (out of 100)',
+                    data: {{ subject_scores | tojson }},
+                    backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { stepSize: 20 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

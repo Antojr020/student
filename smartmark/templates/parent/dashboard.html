@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Parent Portal - Ward Progress{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Parent Portal</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-people-fill text-primary"></i>
+            Ward Academic Progress Overview
+        </h1>
+        <div class="text-muted small mt-1">Logged in as: <strong>{{ current_user.full_name or current_user.username }}</strong></div>
+    </div>
+</div>
+
+{% for item in linked_wards %}
+{% set st = item.student %}
+<div class="card card-custom p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #fff;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="user-avatar-sm" style="width: 54px; height: 54px; font-size: 1.4rem; background: rgba(255, 255, 255, 0.15); color: #fff; border-color: rgba(255, 255, 255, 0.4);">
+                {{ st.name[:2].upper() }}
+            </div>
+            <div>
+                <h4 class="fw-bold mb-1 text-white">{{ st.name }}</h4>
+                <div class="text-white-50 small">
+                    <span class="me-3"><i class="bi bi-person-badge"></i> Reg: <strong class="text-white">{{ st.register_no }}</strong></span>
+                    <span class="me-3"><i class="bi bi-building"></i> {{ st.department }}</span>
+                    <span><i class="bi bi-mortarboard"></i> {{ st.programme }} &bull; Sem {{ st.current_semester }}</span>
+                </div>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('download_marksheet', student_id=st.id, semester=st.current_semester) }}" class="btn btn-light btn-sm fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Download Official Mark Sheet
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Ward Performance KPI Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Current SGPA</div>
+                <div class="stat-value text-primary">{{ "%.2f"|format(item.sgpa) }}</div>
+                <div class="stat-desc text-muted">Semester {{ st.current_semester }} Performance</div>
+            </div>
+            <div class="stat-icon primary"><i class="bi bi-award-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Cumulative CGPA</div>
+                <div class="stat-value text-success">{{ "%.2f"|format(item.cgpa) }}</div>
+                <div class="stat-desc text-muted">Overall Academic Progress</div>
+            </div>
+            <div class="stat-icon success"><i class="bi bi-trophy-fill"></i></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Attendance Rate</div>
+                <div class="stat-value {% if item.attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">{{ item.attendance_rate }}%</div>
+                <div class="stat-desc {% if item.attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">
+                    {{ 'Good Attendance Standing' if item.attendance_rate >= 75 else 'Attendance Shortage Alert!' }}
+                </div>
+            </div>
+            <div class="stat-icon {% if item.attendance_rate >= 75 %}success{% else %}danger{% endif %}"><i class="bi bi-clock-history"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Ward Published Marks Breakdown -->
+<div class="card card-custom overflow-hidden mb-5">
+    <div class="card-header fw-semibold">
+        <i class="bi bi-journal-check text-primary me-2"></i> Semester {{ st.current_semester }} Grade Breakdown
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Credits</th>
+                    <th>Internal Marks</th>
+                    <th>External Marks</th>
+                    <th>Total Score</th>
+                    <th>Grade</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in item.marks %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold text-main">{{ m.subject.subject_name }}</div>
+                        <span class="font-monospace text-muted small">{{ m.subject.subject_code }}</span>
+                    </td>
+                    <td>{{ m.subject.credits }}</td>
+                    <td>{{ (m.internal_marks + m.assignment_marks + m.practical_marks)|round(1) }}</td>
+                    <td>{{ m.external_marks|round(1) }}</td>
+                    <td><span class="fw-bold">{{ m.total_marks|round(1) }}</span></td>
+                    <td>
+                        <span class="badge badge-grade-{{ m.grade.lower() if m.grade != 'A+' else 'ap' }}">
+                            {{ m.grade }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if m.result == 'PASS' %}
+                        <span class="badge badge-soft-success">PASS</span>
+                        {% else %}
+                        <span class="badge badge-soft-danger">FAIL</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center py-4 text-muted">No marks published for this semester yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card card-custom p-5 text-center text-muted">
+    <i class="bi bi-person-x fs-1 mb-2"></i>
+    No enrolled students are currently linked to this parent account. Please contact the college administrative office.
+</div>
+{% endfor %}
+{% endblock %}

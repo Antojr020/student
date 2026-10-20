@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Student Dossier - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li><a href="{{ url_for('admin_students') }}">Students</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">{{ student.register_no }}</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-person-lines-fill text-primary"></i>
+            Student Dossier: {{ student.name }}
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('download_marksheet', student_id=student.id, semester=student.current_semester) }}" class="btn btn-outline-danger btn-sm fw-semibold">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Official PDF
+        </a>
+        <button class="btn btn-outline-secondary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+            <i class="bi bi-key-fill me-1"></i> Reset Password
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Profile Summary Card -->
+    <div class="col-lg-4">
+        <div class="card card-custom h-100">
+            <div class="card-body p-4 text-center">
+                <div class="user-avatar-sm mx-auto mb-3" style="width: 72px; height: 72px; font-size: 1.8rem; border-width: 3px;">
+                    {{ student.name[:2].upper() }}
+                </div>
+                <h4 class="fw-bold mb-1">{{ student.name }}</h4>
+                <div class="font-monospace text-primary fw-bold mb-2">{{ student.register_no }}</div>
+                <span class="badge {% if student.enrollment_status == 'Active' %}badge-soft-success{% else %}badge-soft-secondary{% endif %} px-3 py-1">
+                    {{ student.enrollment_status }}
+                </span>
+
+                <hr class="my-3 opacity-25">
+
+                <div class="text-start small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Department:</span>
+                        <span class="fw-semibold text-main">{{ student.department }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Programme / Degree:</span>
+                        <span class="fw-semibold text-main">{{ student.programme }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Current Semester:</span>
+                        <span class="fw-semibold text-main">Semester {{ student.current_semester }} (Year {{ student.year }})</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Date of Birth / Age:</span>
+                        <span class="fw-semibold text-main">{{ student.date_of_birth.strftime('%d-%b-%Y') if student.date_of_birth else 'N/A' }} ({{ student.age or 'N/A' }} yrs)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Gender:</span>
+                        <span class="fw-semibold text-main">{{ student.gender }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Email:</span>
+                        <span class="fw-semibold text-main">{{ student.email or 'N/A' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Phone:</span>
+                        <span class="fw-semibold text-main">{{ student.phone or 'N/A' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Residential Address:</span>
+                        <span class="fw-semibold text-main text-end" style="max-width: 180px;">{{ student.address or 'Campus Hostel' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic KPI & Attendance Stats -->
+    <div class="col-lg-8">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Semester SGPA</div>
+                        <div class="stat-value text-primary">{{ "%.2f"|format(sgpa) }}</div>
+                        <div class="stat-desc text-muted">10-Point Scale</div>
+                    </div>
+                    <div class="stat-icon primary"><i class="bi bi-star-fill"></i></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Cumulative CGPA</div>
+                        <div class="stat-value text-success">{{ "%.2f"|format(cgpa) }}</div>
+                        <div class="stat-desc text-muted">Overall Academic GPA</div>
+                    </div>
+                    <div class="stat-icon success"><i class="bi bi-trophy-fill"></i></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Attendance Rate</div>
+                        <div class="stat-value {% if attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">{{ attendance_rate }}%</div>
+                        <div class="stat-desc {% if attendance_rate >= 75 %}text-success{% else %}text-danger{% endif %}">
+                            {{ 'Eligible for Exams' if attendance_rate >= 75 else 'Low Attendance Warning' }}
+                        </div>
+                    </div>
+                    <div class="stat-icon {% if attendance_rate >= 75 %}success{% else %}danger{% endif %}">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks History Table -->
+        <div class="card card-custom">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <i class="bi bi-journal-check me-2 text-primary"></i>
+                    Academic Subject Marks & Performance
+                </div>
+                <span class="badge bg-light text-muted border">Semester {{ student.current_semester }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Credits</th>
+                            <th>Internal</th>
+                            <th>External</th>
+                            <th>Total</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in marks %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-main">{{ m.subject.subject_name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.subject.subject_code }}</span>
+                            </td>
+                            <td>{{ m.subject.credits }}</td>
+                            <td>{{ (m.internal_marks + m.assignment_marks + m.practical_marks)|round(1) }} / 40</td>
+                            <td>{{ m.external_marks|round(1) }} / 60</td>
+                            <td><span class="fw-bold">{{ m.total_marks|round(1) }}</span></td>
+                            <td>
+                                <span class="badge badge-grade-{{ m.grade.lower() if m.grade != 'A+' else 'ap' }}">
+                                    {{ m.grade }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if m.result == 'PASS' %}
+                                <span class="badge badge-soft-success">PASS</span>
+                                {% else %}
+                                <span class="badge badge-soft-danger">FAIL</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No marks recorded for this student yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reset Password -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2 text-warning"></i> Reset Student Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_reset_student_password', student_id=student.id) }}">
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Enter a new password for student user account <strong>{{ student.user.username }}</strong>.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">New Password</label>
+                        <input type="password" name="new_password" class="form-control" required placeholder="Min 6 characters" value="student123">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-semibold">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

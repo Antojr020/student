@@ -1,52 +1,65 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Dark Mode Toggle Logic
-    const toggle = document.getElementById('themeToggle');
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-bs-theme', currentTheme);
+    // 1. Theme Management (Light / Dark Mode)
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const savedTheme = localStorage.getItem('smartmark_theme') || 'light';
     
-    if (currentTheme === 'dark' && toggle) {
-        toggle.innerHTML = '<i class="bi bi-brightness-high-fill"></i>';
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('smartmark_theme', theme);
+        if (themeToggleBtn) {
+            themeToggleBtn.innerHTML = theme === 'dark' 
+                ? '<i class="bi bi-sun-fill text-warning"></i>' 
+                : '<i class="bi bi-moon-stars-fill"></i>';
+            themeToggleBtn.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        }
+    }
+    
+    applyTheme(savedTheme);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
     }
 
-    if (toggle) {
-        toggle.addEventListener('click', () => {
-            const theme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', theme);
-            localStorage.setItem('theme', theme);
-            
-            if(theme === 'dark') {
-                toggle.innerHTML = '<i class="bi bi-brightness-high-fill"></i>';
-            } else {
-                toggle.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
+    // 2. Sidebar Mobile Drawer Toggle
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    const appSidebar = document.querySelector('.app-sidebar');
+    let backdrop = document.querySelector('.sidebar-backdrop');
+
+    if (sidebarToggleBtn && appSidebar) {
+        sidebarToggleBtn.addEventListener('click', () => {
+            appSidebar.classList.toggle('show');
+            if (appSidebar.classList.contains('show')) {
+                if (!backdrop) {
+                    backdrop = document.createElement('div');
+                    backdrop.className = 'sidebar-backdrop';
+                    document.body.appendChild(backdrop);
+                    backdrop.addEventListener('click', () => {
+                        appSidebar.classList.remove('show');
+                        backdrop.remove();
+                        backdrop = null;
+                    });
+                }
+            } else if (backdrop) {
+                backdrop.remove();
+                backdrop = null;
             }
         });
     }
 
-    // Initialize Chart.js if canvas exists
-    const adminCtx = document.getElementById('adminChart');
-    if (adminCtx) {
-        new Chart(adminCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5'],
-                datasets: [{
-                    label: 'Pass Percentage (%)',
-                    data: [85, 90, 88, 92, 95],
-                    backgroundColor: 'rgba(13, 110, 253, 0.6)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100
-                    }
-                }
-            }
+    // 3. Quick Table Filter Helper
+    const tableSearchInput = document.getElementById('tableSearchInput');
+    if (tableSearchInput) {
+        tableSearchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.table-searchable tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
         });
     }
 });

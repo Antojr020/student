@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Daily Attendance Entry - Faculty Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('faculty_dashboard') }}">Faculty</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Attendance Recording</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-check2-circle text-primary"></i>
+            Daily / Subject-Wise Attendance Recording
+        </h1>
+    </div>
+</div>
+
+<!-- Select Subject & Date Form -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('faculty_attendance_entry') }}" class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Select Assigned Subject</label>
+                <select name="subject_id" class="form-select" onchange="this.form.submit()">
+                    {% for a in assigned_subjects %}
+                    {% set s = a.subject %}
+                    <option value="{{ s.id }}" {% if selected_subject and selected_subject.id == s.id %}selected{% endif %}>
+                        {{ s.subject_code }} - {{ s.subject_name }} (Sem {{ s.semester }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small text-muted">Attendance Date</label>
+                <input type="date" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Load Roster
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_subject %}
+<form method="POST" action="{{ url_for('faculty_save_attendance') }}">
+    <input type="hidden" name="subject_id" value="{{ selected_subject.id }}">
+    <input type="hidden" name="date" value="{{ selected_date }}">
+
+    <div class="card card-custom overflow-hidden mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="fw-semibold">
+                <span>Roster for {{ selected_subject.subject_code }} &bull; {{ selected_date }}</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success fw-semibold" onclick="markAll('Present')">
+                    <i class="bi bi-check-all me-1"></i> Mark All Present
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger fw-semibold" onclick="markAll('Absent')">
+                    <i class="bi bi-x-circle me-1"></i> Mark All Absent
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-custom align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Register No</th>
+                        <th>Student Name</th>
+                        <th>Current Attendance Status</th>
+                        <th>Remarks (Optional)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in roster %}
+                    {% set st = item.student %}
+                    {% set record = item.record %}
+                    <tr>
+                        <td>
+                            <span class="font-monospace fw-bold text-primary">{{ st.register_no }}</span>
+                            <input type="hidden" name="student_ids" value="{{ st.id }}">
+                        </td>
+                        <td><div class="fw-semibold text-main">{{ st.name }}</div></td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check att-radio" name="status_{{ st.id }}" id="pres_{{ st.id }}" value="Present" {% if not record or record.status == 'Present' %}checked{% endif %}>
+                                <label class="btn btn-outline-success" for="pres_{{ st.id }}">Present</label>
+
+                                <input type="radio" class="btn-check att-radio" name="status_{{ st.id }}" id="abs_{{ st.id }}" value="Absent" {% if record and record.status == 'Absent' %}checked{% endif %}>
+                                <label class="btn btn-outline-danger" for="abs_{{ st.id }}">Absent</label>
+
+                                <input type="radio" class="btn-check att-radio" name="status_{{ st.id }}" id="late_{{ st.id }}" value="Late" {% if record and record.status == 'Late' %}checked{% endif %}>
+                                <label class="btn btn-outline-warning" for="late_{{ st.id }}">Late</label>
+
+                                <input type="radio" class="btn-check att-radio" name="status_{{ st.id }}" id="exc_{{ st.id }}" value="Excused" {% if record and record.status == 'Excused' %}checked{% endif %}>
+                                <label class="btn btn-outline-info" for="exc_{{ st.id }}">Excused</label>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="text" name="remarks_{{ st.id }}" class="form-control form-control-sm" placeholder="Notes..." value="{{ record.remarks if record and record.remarks else '' }}">
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-4 text-muted">No students enrolled in this subject class.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-light p-3 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary fw-semibold px-4">
+                <i class="bi bi-save me-1"></i> Save Attendance Records
+            </button>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<script>
+function markAll(status) {
+    document.querySelectorAll('.att-radio').forEach(radio => {
+        if (radio.value === status) {
+            radio.checked = true;
+        }
+    });
+}
+</script>
+{% endblock %}

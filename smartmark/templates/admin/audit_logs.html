@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}System & Security Audit Logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Audit Trail</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-shield-check text-primary"></i>
+            System & Security Audit Trail
+        </h1>
+    </div>
+</div>
+
+<div class="card card-custom overflow-hidden">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Recorded Institutional Activity Log</span>
+        <span class="badge bg-secondary font-monospace">{{ logs|length }} Entries Logged</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User / Actor</th>
+                    <th>Action Event</th>
+                    <th>Description & Particulars</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="font-monospace small text-muted">
+                        {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}
+                    </td>
+                    <td>
+                        {% if log.user %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="user-avatar-sm" style="width: 28px; height: 28px; font-size: 0.7rem;">
+                                {{ (log.user.full_name or log.user.username)[:2].upper() }}
+                            </div>
+                            <div>
+                                <span class="fw-semibold small text-main">{{ log.user.full_name or log.user.username }}</span>
+                                <div class="text-muted" style="font-size: 0.68rem;">{{ log.user.display_role }}</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="badge bg-light text-muted border">System Automated</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary font-monospace fw-bold" style="font-size: 0.72rem;">
+                            {{ log.action }}
+                        </span>
+                    </td>
+                    <td><div class="small text-main">{{ log.description }}</div></td>
+                    <td><span class="font-monospace text-muted small">{{ log.ip_address or '127.0.0.1' }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">No audit logs recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

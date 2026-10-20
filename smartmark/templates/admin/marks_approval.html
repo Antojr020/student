@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Faculty Marks Verification & Administrative Approval{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <ul class="breadcrumb-custom">
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li><i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i></li>
+            <li class="text-primary">Marks Approval</li>
+        </ul>
+        <h1 class="page-title">
+            <i class="bi bi-award-fill text-primary"></i>
+            Faculty Marks Verification & Approval
+        </h1>
+    </div>
+    <div class="d-flex gap-2">
+        {% if pending_marks %}
+        <form method="POST" action="{{ url_for('admin_batch_approve_marks') }}" onsubmit="return confirm('Approve all {{ pending_marks|length }} pending marks records?');">
+            <button type="submit" class="btn btn-success btn-sm fw-semibold">
+                <i class="bi bi-check-all me-1"></i> Approve All Pending ({{ pending_marks|length }})
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabs: Pending Submissions vs Approved Marks -->
+<ul class="nav nav-pills mb-4 gap-2" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active px-3 py-2 fw-semibold" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pendingTab" type="button">
+            <i class="bi bi-clock-history me-1"></i> Awaiting Approval
+            <span class="badge bg-danger ms-1">{{ pending_marks|length }}</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link px-3 py-2 fw-semibold" id="approved-tab" data-bs-toggle="pill" data-bs-target="#approvedTab" type="button">
+            <i class="bi bi-check-circle me-1"></i> Officially Approved & Published
+            <span class="badge bg-secondary ms-1">{{ approved_marks|length }}</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Pending Marks Tab -->
+    <div class="tab-pane fade show active" id="pendingTab">
+        <div class="card card-custom overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Subject & Exam</th>
+                            <th>Internal</th>
+                            <th>External</th>
+                            <th>Total</th>
+                            <th>Grade</th>
+                            <th>Result</th>
+                            <th>Submitted By</th>
+                            <th class="text-end">Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in pending_marks %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-main">{{ m.student.name }}</div>
+                                <span class="font-monospace text-primary small">{{ m.student.register_no }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold small">{{ m.subject.subject_name }}</div>
+                                <span class="text-muted" style="font-size: 0.7rem;">{{ m.examination_rel.name if m.examination_rel else 'General' }}</span>
+                            </td>
+                            <td>{{ (m.internal_marks + m.assignment_marks + m.practical_marks)|round(1) }} / 40</td>
+                            <td>{{ m.external_marks|round(1) }} / 60</td>
+                            <td><span class="fw-bold fs-6">{{ m.total_marks|round(1) }}</span></td>
+                            <td>
+                                <span class="badge badge-grade-{{ m.grade.lower() if m.grade != 'A+' else 'ap' }}">
+                                    {{ m.grade }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if m.result == 'PASS' %}
+                                <span class="badge badge-soft-success">PASS</span>
+                                {% else %}
+                                <span class="badge badge-soft-danger">FAIL</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small">{{ m.entered_by.full_name or m.entered_by.username if m.entered_by else 'Faculty' }}</div>
+                                <small class="text-muted" style="font-size: 0.68rem;">{{ m.updated_at.strftime('%d-%b %H:%M') if m.updated_at else '' }}</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <form method="POST" action="{{ url_for('admin_approve_mark', mark_id=m.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-success" title="Approve & Publish to Student">
+                                            <i class="bi bi-check-lg"></i> Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin_reject_mark', mark_id=m.id) }}" class="d-inline" onsubmit="return confirm('Reject this mark submission back to faculty draft?');">
+                                        <button type="submit" class="btn btn-outline-danger" title="Reject Submission">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-check2-circle text-success fs-1 d-block mb-2"></i>
+                                No marks awaiting administrative approval. All submissions are up to date!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approved Marks Tab -->
+    <div class="tab-pane fade" id="approvedTab">
+        <div class="card card-custom overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Subject</th>
+                            <th>Total Marks</th>
+                            <th>Grade & Points</th>
+                            <th>Result</th>
+                            <th>Approved By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in approved_marks %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-main">{{ m.student.name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.student.register_no }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold small">{{ m.subject.subject_name }}</div>
+                                <span class="font-monospace text-muted small">{{ m.subject.subject_code }}</span>
+                            </td>
+                            <td><span class="fw-bold">{{ m.total_marks|round(1) }}</span> / 100</td>
+                            <td>
+                                <span class="badge badge-grade-{{ m.grade.lower() if m.grade != 'A+' else 'ap' }} me-1">
+                                    {{ m.grade }}
+                                </span>
+                                <span class="small text-muted">({{ m.grade_point }} pts)</span>
+                            </td>
+                            <td>
+                                {% if m.result == 'PASS' %}
+                                <span class="badge badge-soft-success">PASS</span>
+                                {% else %}
+                                <span class="badge badge-soft-danger">FAIL</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small">{{ m.approved_by.full_name or 'Admin' if m.approved_by else 'Admin Office' }}</div>
+                                <small class="text-muted" style="font-size: 0.68rem;">Verified & Locked</small>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No approved marks recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
