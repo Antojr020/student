@@ -43,8 +43,12 @@ def load_user(user_id):
 # Inject global variables into all templates
 @app.context_processor
 def inject_global_settings():
-    college_name = SystemSetting.get('college_name', 'SmartMark College of Technology')
-    active_ay = SystemSetting.get('active_academic_year', '2025-2026')
+    try:
+        college_name = SystemSetting.get('college_name', 'SmartMark College of Technology')
+        active_ay = SystemSetting.get('active_academic_year', '2025-2026')
+    except Exception:
+        college_name = 'SmartMark College of Technology'
+        active_ay = '2025-2026'
     return dict(app_college_name=college_name, app_active_academic_year=active_ay)
 
 # ==========================================================================
@@ -1473,7 +1477,18 @@ def initdb_command():
     seed_database()
     print('Database initialized with complete collegiate schema and sample data.')
 
+def init_db():
+    """Initialize database tables and seed data if empty."""
+    db.create_all()
+    # Auto-seed on first run if no users exist
+    if User.query.first() is None:
+        try:
+            seed_database()
+            print('Database seeded with initial data.')
+        except Exception as e:
+            print(f'Seeding skipped or failed: {e}')
+
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        init_db()
     app.run(debug=True, port=5000)
