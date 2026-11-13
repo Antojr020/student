@@ -1,6 +1,7 @@
 import os
 import io
 import csv
+import logging
 from datetime import datetime, date
 from flask import (
     Flask, render_template, redirect, url_for, request,
@@ -1479,16 +1480,33 @@ def initdb_command():
 
 def init_db():
     """Initialize database tables and seed data if empty."""
-    db.create_all()
-    # Auto-seed on first run if no users exist
-    if User.query.first() is None:
-        try:
-            seed_database()
-            print('Database seeded with initial data.')
-        except Exception as e:
-            print(f'Seeding skipped or failed: {e}')
+    try:
+        db.create_all()
+        # Auto-seed on first run if no users exist
+        if User.query.first() is None:
+            try:
+                seed_database()
+                print('Database seeded with initial data.')
+            except Exception as e:
+                print(f'Seeding skipped or failed: {e}')
+    except Exception as e:
+        print(f'Database create_all warning: {e}')
+
+# Auto-initialize database on application import (essential for PythonAnywhere & Gunicorn)
+with app.app_context():
+    try:
+        init_db()
+    except Exception as e:
+        app.logger.warning(f"Deferred database initialization: {e}")
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    app.logger.error(f"Internal Server Error (500): {e}", exc_info=True)
+    return render_template('500.html', error=str(e)), 500
+
+@app.errorhandler(404)
+def not_found_error(e):
+    return render_template('404.html'), 404
 
 if __name__ == '__main__':
-    with app.app_context():
-        init_db()
     app.run(debug=True, port=5000)

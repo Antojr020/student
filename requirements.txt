@@ -1,0 +1,2 @@
+-r smartmark/requirements.txt
+
