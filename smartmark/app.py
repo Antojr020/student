@@ -39,7 +39,15 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return db.session.get(User, int(user_id))
+    except Exception as e:
+        app.logger.warning(f"Error loading user {user_id}: {e}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return None
 
 # Inject global variables into all templates
 @app.context_processor
@@ -48,6 +56,10 @@ def inject_global_settings():
         college_name = SystemSetting.get('college_name', 'SmartMark College of Technology')
         active_ay = SystemSetting.get('active_academic_year', '2025-2026')
     except Exception:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
         college_name = 'SmartMark College of Technology'
         active_ay = '2025-2026'
     return dict(app_college_name=college_name, app_active_academic_year=active_ay)
@@ -1499,10 +1511,61 @@ with app.app_context():
     except Exception as e:
         app.logger.warning(f"Deferred database initialization: {e}")
 
+@app.route('/health')
+def health_check():
+    """Diagnostic health check to inspect database connectivity and permissions."""
+    info = {
+        'status': 'unknown',
+        'database_configured_scheme': (app.config.get('SQLALCHEMY_DATABASE_URI') or '').split(':')[0],
+        'tables_count': 0,
+        'users_count': 0,
+        'error': None
+    }
+    
+    # Check SQLite file and directory permissions if SQLite
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if db_uri.startswith('sqlite:///'):
+        sqlite_file = db_uri[len('sqlite:///'):]
+        info['sqlite_path'] = sqlite_file
+        info['database_file_exists'] = os.path.exists(sqlite_file)
+        if os.path.exists(sqlite_file):
+            info['database_file_writable'] = os.access(sqlite_file, os.W_OK)
+        inst_dir = os.path.dirname(sqlite_file)
+        info['instance_dir_exists'] = os.path.exists(inst_dir)
+        if os.path.exists(inst_dir):
+            info['instance_dir_writable'] = os.access(inst_dir, os.W_OK)
+
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        info['tables_count'] = len(tables)
+        info['tables'] = tables
+        if 'users' in tables:
+            info['users_count'] = User.query.count()
+        info['status'] = 'healthy'
+    except Exception as e:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        info['status'] = 'unhealthy'
+        info['error'] = f"{type(e).__name__}: {str(e)}"
+        
+    return jsonify(info)
+
 @app.errorhandler(500)
 def internal_server_error(e):
-    app.logger.error(f"Internal Server Error (500): {e}", exc_info=True)
-    return render_template('500.html', error=str(e)), 500
+    import traceback
+    original = getattr(e, 'original_exception', e)
+    tb = traceback.format_exc()
+    error_summary = f"{type(original).__name__}: {str(original)}" if original else str(e)
+    app.logger.error(f"Internal Server Error (500): {error_summary}\n{tb}")
+    try:
+        db.session.rollback()
+    except Exception:
+        pass
+    return render_template('500.html', error=error_summary, traceback=tb), 500
 
 @app.errorhandler(404)
 def not_found_error(e):

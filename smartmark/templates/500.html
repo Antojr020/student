@@ -51,17 +51,32 @@
         </p>
 
         {% if error %}
-        <div class="alert alert-dark text-start border-secondary small mb-4 py-2 px-3 overflow-auto" style="max-height: 120px;">
-            <code class="text-danger">{{ error }}</code>
+        <div class="alert alert-dark text-start border-secondary small mb-3 py-3 px-3">
+            <div class="fw-bold text-warning mb-1"><i class="bi bi-bug me-1"></i> Exception Summary:</div>
+            <code class="text-white" style="word-break: break-all; font-size: 0.85rem;">{{ error }}</code>
         </div>
         {% endif %}
 
-        <div class="d-flex justify-content-center gap-3">
-            <a href="/" class="btn btn-primary px-4 py-2 fw-semibold rounded-3">
-                <i class="bi bi-house-door me-1"></i> Return to Home
+        {% if traceback %}
+        <div class="text-start mb-3">
+            <details class="bg-black rounded-3 border border-secondary p-2">
+                <summary class="text-white-50 small cursor-pointer" style="cursor: pointer;">
+                    <i class="bi bi-code-slash me-1"></i> View Diagnostic Stack Trace
+                </summary>
+                <pre class="text-danger-emphasis mt-2 mb-0 small" style="font-size: 0.72rem; white-space: pre-wrap; overflow-x: auto;">{{ traceback }}</pre>
+            </details>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-center gap-2 mb-3">
+            <a href="/" class="btn btn-primary px-3 py-2 fw-semibold rounded-3">
+                <i class="bi bi-house-door me-1"></i> Return Home
             </a>
-            <a href="/login" class="btn btn-outline-light px-4 py-2 fw-semibold rounded-3">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In Page
+            <a href="/login" class="btn btn-outline-light px-3 py-2 fw-semibold rounded-3">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+            </a>
+            <a href="/health" class="btn btn-outline-info px-3 py-2 fw-semibold rounded-3" target="_blank">
+                <i class="bi bi-activity me-1"></i> Check /health
             </a>
         </div>
     </div>
