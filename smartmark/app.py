@@ -1116,12 +1116,12 @@ def faculty_marks_entry():
     student_marks_data = []
 
     if subject_id:
-        selected_subject = Subject.query.get(subject_id)
+        selected_subject = db.session.get(Subject, subject_id)
     elif assigned_subjects:
         selected_subject = assigned_subjects[0].subject
 
     if examination_id:
-        selected_exam = Examination.query.get(examination_id)
+        selected_exam = db.session.get(Examination, examination_id)
     elif examinations:
         selected_exam = examinations[0]
 
@@ -1215,7 +1215,7 @@ def faculty_attendance_entry():
 
     selected_subject = None
     if subject_id:
-        selected_subject = Subject.query.get(subject_id)
+        selected_subject = db.session.get(Subject, subject_id)
     elif assigned_subjects:
         selected_subject = assigned_subjects[0].subject
 
@@ -1494,15 +1494,20 @@ def init_db():
     """Initialize database tables and seed data if empty."""
     try:
         db.create_all()
-        # Auto-seed on first run if no users exist
-        if User.query.first() is None:
-            try:
-                seed_database()
-                print('Database seeded with initial data.')
-            except Exception as e:
-                print(f'Seeding skipped or failed: {e}')
     except Exception as e:
-        print(f'Database create_all warning: {e}')
+        app.logger.error(f'Database create_all failed: {e}')
+        return
+
+    try:
+        if User.query.first() is None:
+            seed_database()
+            app.logger.info('Database seeded with initial collegiate demo data.')
+    except Exception as e:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        app.logger.warning(f'Auto-seeding note: {e}')
 
 # Auto-initialize database on application import (essential for PythonAnywhere & Gunicorn)
 with app.app_context():
@@ -1566,6 +1571,10 @@ def internal_server_error(e):
     except Exception:
         pass
     return render_template('500.html', error=error_summary, traceback=tb), 500
+
+@app.errorhandler(403)
+def forbidden_error(e):
+    return render_template('403.html'), 403
 
 @app.errorhandler(404)
 def not_found_error(e):

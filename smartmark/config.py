@@ -16,8 +16,11 @@ if not raw_db_url or raw_db_url.strip() in ('sqlite:///smartmark.db', 'sqlite://
     # Default to absolute path in instance/ to prevent cwd / read-only directory issues in WSGI / PythonAnywhere
     database_uri = f'sqlite:///{default_sqlite_db}'
 elif raw_db_url.startswith('postgres://'):
-    # Fix SQLAlchemy 1.4+ compatibility (Render, Supabase, Heroku postgres:// URLs)
-    database_uri = raw_db_url.replace('postgres://', 'postgresql://', 1)
+    # Fix SQLAlchemy 1.4+ compatibility (Render, Supabase, Heroku postgres:// URLs) using psycopg2
+    database_uri = raw_db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+elif raw_db_url.startswith('postgresql://') and not raw_db_url.startswith('postgresql+'):
+    # Ensure psycopg2-binary driver is targeted directly in SQLAlchemy 2.0
+    database_uri = raw_db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
 elif raw_db_url.startswith('sqlite:///') and not raw_db_url.startswith('sqlite:////') and not (len(raw_db_url) > 11 and raw_db_url[11] == ':'):
     # Relative SQLite path: resolve against basedir
     rel_path = raw_db_url[len('sqlite:///'):]
@@ -30,5 +33,18 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'super-secret-production-key-change-me'
     SQLALCHEMY_DATABASE_URI = database_uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Production Engine Options: pre-ping to detect stale connections and connection timeouts
+    if database_uri.startswith('sqlite:'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {'timeout': 30, 'check_same_thread': False},
+            'pool_pre_ping': True,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'pool_recycle': 280,
+        }
+
 
 

@@ -12,6 +12,14 @@ def seed_database():
     Populate the database with a complete, realistic collegiate ecosystem:
     departments, courses, faculty, students, exams, marks, attendance, announcements, and settings.
     """
+    try:
+        _run_seeder()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database seeding encountered error and rolled back: {e}")
+        raise
+
+def _run_seeder():
     print("Starting database seeding...")
 
     # 1. System Settings
