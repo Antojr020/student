@@ -1,13 +1,40 @@
 import os
+import shutil
+import tempfile
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
-# Ensure instance directory exists for SQLite
-instance_path = os.path.join(basedir, 'instance')
-os.makedirs(instance_path, exist_ok=True)
-default_sqlite_db = os.path.join(instance_path, 'smartmark.db').replace('\\', '/')
+# Serverless environment detection (Vercel, AWS Lambda) where filesystems are read-only
+is_serverless = (
+    os.environ.get('VERCEL') == '1' or
+    os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None or
+    bool(os.environ.get('NOW_REGION'))
+)
+
+if is_serverless:
+    instance_path = os.path.join(tempfile.gettempdir(), 'instance')
+    os.makedirs(instance_path, exist_ok=True)
+    default_sqlite_db = os.path.join(instance_path, 'smartmark.db').replace('\\', '/')
+    repo_db = os.path.join(basedir, 'instance', 'smartmark.db')
+    target_db = os.path.join(instance_path, 'smartmark.db')
+    if os.path.exists(repo_db) and not os.path.exists(target_db):
+        try:
+            shutil.copy2(repo_db, target_db)
+        except Exception:
+            pass
+else:
+    try:
+        instance_path = os.path.join(basedir, 'instance')
+        os.makedirs(instance_path, exist_ok=True)
+        default_sqlite_db = os.path.join(instance_path, 'smartmark.db').replace('\\', '/')
+    except OSError:
+        # Graceful fallback if host filesystem is read-only
+        instance_path = os.path.join(tempfile.gettempdir(), 'instance')
+        os.makedirs(instance_path, exist_ok=True)
+        default_sqlite_db = os.path.join(instance_path, 'smartmark.db').replace('\\', '/')
+
 
 # Resolve database URL/URI flexibly for SQLite, PostgreSQL, MySQL
 raw_db_url = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_URI')
